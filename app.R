@@ -1,131 +1,56 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
+  library(rnaturalearth)#libudunits2-dev
+  library(shiny)
+  library(shinydashboard)
+  library(raster)
+  library(ggplot2)
+  library(rasterVis)
+  library(rgdal)
 
-library(shiny)
-library(plyr)
-library(rtiff)
-library(tiff)
-library(raster)
-library(rgdal)#hacia falta la libreria sudo apt-get install libgdal1-dev libproj-dev libgdal-dev
-library(sp)
-library(maptools)
-library(vetools)
-library(ggplot2)
-library(rasterVis)
-library(RColorBrewer)
-library(viridis)
-library(leaflet)
-setwd("~/Documents/future climate/mapas10min")
+setwd("~/")
 
-# get all the tif files
-m <- list.files(path = "/home/ro/Documents/future climate/mapas10min", pattern = "*.tif", full.names = F)
-
-# Define UI for application that draws a histogram
-ui <- fluidPage(
-  
-  # Application title
-  titlePanel("Clima del futuro en distintas zonas del planeta"),
-  
-  # Sidebar with a slider input for number of bins 
-  sidebarLayout(
-    sidebarPanel(
-      numericInput("Loi", "Longitud E izquierda", -73, min = NA, max = NA, step = NA,
-                   width = NULL),
-      numericInput("Lod", "Longitud E derecha", -64, min = NA, max = NA, step = NA,
-                   width = NULL),
-      numericInput("Laar", "Latitud N inferior", 5, min = NA, max = NA, step = NA,
-                   width = NULL),
-      numericInput("Laab", "Latitud N superior", 11, min = NA, max = NA, step = NA,
-                   width = NULL),
-      h3("Escenario 1"),
-      selectizeInput("options5","Variable",choices = c("pr","tn","tx")),
-      selectizeInput("options","Modelo",choices = c("bc","cc","gs","hd","ip","mc","mg","no")),
-      selectizeInput("options2","Escenario",choices = c("26","45","60","85")),
-      selectizeInput("options3","Año",choices = c("50","70")),
-      selectizeInput("options4","Mes",choices = c("01","02","03","04","05","06","07","08","09","10","11","12")),
-      h3("Escenario 2"),
-      selectizeInput("options5b","Variable",choices = c("pr","tn","tx")),
-      selectizeInput("optionsb","Modelo",choices = c("bc","cc","gs","hd","ip","mc","mg","no")),
-      selectizeInput("options2b","Escenario",choices = c("26","45","60","85")),
-      selectizeInput("options3b","Año",choices = c("50","70")),
-      selectizeInput("options4b","Mes",choices = c("01","02","03","04","05","06","07","08","09","10","11","12")),
-      h3("Escenario actual (año 2000"),
-      selectizeInput("options5c","Variable",choices = c("prec","tmin","tmax")),
-      selectizeInput("options4c","Mes",choices = c("01","02","03","04","05","06","07","08","09","10","11","12"))
-    ),
-    
-    # Show 2 plots for comparison
-    mainPanel(
-     leafletOutput("distPlot")
+ui <- dashboardPage(
+    dashboardHeader(title = "RconRo"),
+    dashboardSidebar(selectInput("opt1","Predicciones futuras para el año 2050 o 2070:",c(50,70),70),
+                     selectInput("opt2","Modelo seleccionado:", c("AC", "BC", "CC", "CE", "CN", "GF", "GD", "GS", "HD", "HG", "HE", "IN", "IP", "MI", "MR", "MC", "MP", "MG", "NO"),"NO"),
+                     selectInput("opt3","Escenario de emisiones CO2:",c(26, 45, 60, 85),85),
+                     textInput("opt4","País a evaluar:","spain")),
+    dashboardBody(
+         
+        h5("Por favor espere 10 segundos mientras se descargan los datos"),
+       h3("A la izquierda, la precipitación anual promedio entre 1960-1990. A la derecha, las proyecciones para el futuro (2050 / 2070) según distintos modelos CMIP5 y escenarios de emisiones de CO2"),
+         plotOutput("Mapa"),
       
-      
-    )
-  )
-)
+    h5("Hijmans, R.J., S.E. Cameron, J.L. Parra, P.G. Jones and A. Jarvis, 2005. Very high resolution interpolated climate surfaces for global land areas. International Journal of Climatology 25: 1965-1978. "),
+   h5("Data descargada a partir de http://www.worldclim.org"),
+     tags$b("Creador de la app: Rodrigo Díaz Lupanow"),
+   tags$b("(programandoconro@gmail.com)")
+   ))
 
-# Define server logic required to draw a histogram
-server <- function(input, output) {
-  
-  
-  output$distPlot <- renderLeaflet({
-    
-    su<- list.files(path = "/home/ro/Documents/future climate/mapas10min", 
-                    pattern = input$options5)
-    
-        uy<- subset(su,grepl(input$options4,su,fixed = F))
-        uy2<- subset(uy,grepl(input$options,uy,fixed = F))
-      uy3<- subset(uy2,grepl(input$options3,uy2,fixed = F))
-        uy4<- subset(uy3,grepl(input$options2,uy3,fixed = F))
- 
-    su2<- list.files(path = "/home/ro/Documents/future climate/mapas10min", 
-                     pattern = input$options5b)
-  
-      uyb<- subset(su2,grepl(input$options4b,su2), drop = TRUE)
-    uy2b<- subset(uyb,grepl(input$optionsb,uyb), drop = TRUE)
-    uy3b<- subset(uy2b,grepl(input$options3b,uy2b), drop = TRUE)
-    uy4b<- subset(uy3b,grepl(input$options2b,uy3b), drop = TRUE)
-    
-    
-    suc<- list.files(path = "/home/ro/Documents/future climate/mapas10min", 
-                     pattern =  "wc")
-    
-    uyc<- subset(suc,grepl(input$options5c,suc,fixed = F))
-    
-    uyc2<- subset(uyc,grepl(input$options4c,uyc,fixed = F))
-    
-     setwd("~/Documents/future climate/mapas10min")
-     l3<-raster(uy4[1])
-    l2b<-raster(uy4b[1])
-    l2<-raster(uyc2[1])
-    
-     mi <- extent(input$Loi, input$Lod, input$Laar, input$Laab)#demarcar el área geográfica de interes 
-    
-    sb=crop(l2b,mi)
-    s=crop(l3,mi) 
-    sc=crop(l2,mi) 
-
-  ss<-stack(s,sb,sc)
-  
-  pal <- colorNumeric(c("#0C2C84", "#41B6C4", "#FFFFCC"), values(s),
-                      na.color = "transparent") 
+server <- function(input, output) { 
    
-  leaflet() %>% addTiles() %>%
-    addRasterImage(s, colors = pal, opacity = 0.8) %>%
-    addLegend(pal = pal, values = values(s),
-              title = "variable")
+output$Mapa<-    renderPlot({
+    
+    esp = ne_countries(country = input$opt4)
+    spain_prec_act = getData(name = "worldclim", var = "prec", res = 10, lon= -4, lat=40)
+    spain_prec_2050_best = getData(name = "CMIP5", model= input$opt2, rcp= input$opt3, year= input$opt1,res=10, lon= -4, lat=40,var="prec")
+    
+    r1 <- crop(spain_prec_act, esp)
+    r2 <- crop(spain_prec_2050_best, esp)
+    
+    r1 <- r1[[1]]+r1[[2]]+r1[[3]]+r1[[4]]+r1[[5]]+r1[[6]]+r1[[7]]+r1[[8]]+r1[[9]]+r1[[10]]+r1[[11]]+r1[[12]]
+    r2 <- r2[[1]]+r2[[2]]+r2[[3]]+r2[[4]]+r2[[5]]+r2[[6]]+r2[[7]]+r2[[8]]+r2[[9]]+r2[[10]]+r2[[11]]+r2[[12]]
+    
+    s <-stack(r1,r2)
+    
+    theme_set(theme_bw())
+    gplot(s) + geom_tile(aes(fill = value)) + facet_wrap(~ variable) +
+        scale_fill_gradient(low = 'white', high = 'blue',name="An. PPT. (mm)") + 
+        coord_equal()+
+        theme(strip.text.x = element_blank())+xlab("Long (GD)")+ylab("Lat (GD)")
+    
+})
+    
+    }
 
-  })
-
-}
-
-
-
-# Run the application 
-shinyApp(ui = ui, server = server)
+shinyApp(ui, server)
 
