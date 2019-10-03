@@ -1,4 +1,4 @@
-App: Precipitation changes in the world for 2050 and 2070.
+App: Precipitation future changes in the world (2050 and 2070).
 
 <div style="text-align:center"><img src="https://programandoconro.files.wordpress.com/2019/07/cropped-net-2.png?w=300" /></div>
 
